@@ -1,0 +1,23 @@
+{
+  "name": "whatsapp-owner-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WhatsApp message relay with owner reply routing.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "check": "node --check src/index.js && node --check src/messageHandler.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^7.0.0-rc.14",
+    "dotenv": "^16.6.1",
+    "pino": "^9.9.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
