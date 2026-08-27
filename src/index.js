@@ -5,6 +5,7 @@ import { AiReplyService } from './aiReplyService.js';
 import { MoodGifService } from './moodGifService.js';
 import { DisasterAlertService } from './disasterAlertService.js';
 import { ContactDirectory } from './contactDirectory.js';
+import { DiscordBackupService } from './discordBackupService.js';
 import { createMessageHandler } from './messageHandler.js';
 import { ConnectionManager } from './connection.js';
 
@@ -36,6 +37,7 @@ const autoReply = new AutoReplyService();
 const aiReply = new AiReplyService();
 const moodGif = new MoodGifService();
 const disasterAlerts = new DisasterAlertService();
+const discordBackup = new DiscordBackupService();
 const contactDirectory = new ContactDirectory();
 if (config.contacts.enabled) await contactDirectory.load(config.contacts.vcfFile, log);
 let manager;
@@ -44,7 +46,10 @@ manager = new ConnectionManager({
   config,
   onMessages,
   log,
-  onConnected: () => disasterAlerts.start(() => manager.sock, { ...config.disasterAlerts, ownerJid: config.ownerJid }, log)
+  onConnected: () => {
+    disasterAlerts.start(() => manager.sock, { ...config.disasterAlerts, ownerJid: config.ownerJid }, log);
+    discordBackup.start({ ...config.discordBackup, contactVcfFile: config.contacts.vcfFile }, log);
+  }
 });
 await manager.start();
 
@@ -55,6 +60,7 @@ async function shutdown(signal) {
   console.log(`\n[SHUTDOWN] ${signal}`);
   await manager.stop().catch((error) => log('ERROR', { event: 'shutdown_socket', error: error.message }));
   disasterAlerts.stop();
+  discordBackup.stop();
   await storage.close().catch((error) => log('ERROR', { event: 'shutdown_storage', error: error.message }));
   process.exit(0);
 }

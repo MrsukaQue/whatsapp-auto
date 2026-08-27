@@ -16,6 +16,7 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc.14",
+    "archiver": "^7.0.1",
     "dotenv": "^16.6.1",
     "pino": "^9.9.0",
     "qrcode-terminal": "^0.12.0"

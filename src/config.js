@@ -87,6 +87,11 @@ export const config = Object.freeze({
     enabled: bool('DISASTER_ALERTS_ENABLED', true),
     interval: Math.max(60000, positiveInt('DISASTER_ALERT_INTERVAL_MS', 3600000))
   },
+  discordBackup: {
+    enabled: bool('DISCORD_BACKUP_ENABLED', false),
+    webhookUrl: process.env.DISCORD_BACKUP_WEBHOOK_URL?.trim() || null,
+    interval: Math.max(3600000, positiveInt('DISCORD_BACKUP_INTERVAL_MS', 86400000))
+  },
   mappingTtl: positiveInt('MESSAGE_MAPPING_TTL', 86400000),
   reconnect: {
     maxAttempts: positiveInt('RECONNECT_MAX_ATTEMPTS', 8),
