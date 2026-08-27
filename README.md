@@ -77,11 +77,13 @@ AI_MODEL=qwen2.5:1.5b
 
 ### Persona
 
-The active persona lives in [prompts/mikail-full.txt](prompts/mikail-full.txt). Set this in `.env`:
+Create your own private persona file locally, for example `prompts/my-persona.txt`, then set this in `.env`:
 
 ```env
-AI_SYSTEM_PROMPT_FILE=prompts/mikail-full.txt
+AI_SYSTEM_PROMPT_FILE=prompts/my-persona.txt
 ```
+
+Persona files are intentionally ignored by Git because they can contain personal details.
 
 ## Owner Commands
 
