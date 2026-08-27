@@ -1,76 +1,198 @@
-# WhatsApp Owner Assistant
+# Mika WhatsApp Bot
 
-Bot Node.js berbasis Baileys untuk meneruskan pesan masuk ke OWNER dan merelay balasan OWNER ketika OWNER membalas (Reply) notifikasi bot.
+> A personal WhatsApp automation bot with AI replies, owner routing, group chat support, music requests, BMKG alerts, and optional Discord backups.
 
-## Instalasi dan login
+Built with **Node.js**, **Baileys**, and interchangeable AI providers such as **Gemini**, **Ollama**, and OpenAI.
 
-1. Gunakan Node.js 20 atau lebih baru.
-2. Salin `.env.example` menjadi `.env`, lalu isi `OWNER_NUMBER` dengan nomor WhatsApp owner dalam format internasional (contoh: `628123456789`).
-3. Jalankan `npm install`, lalu `npm start`.
-4. QR akan tampil di terminal. Pada WhatsApp yang menjadi **akun bot**, buka **Perangkat tertaut / Linked devices** lalu pindai QR tersebut.
+## Features
 
-Session disimpan lokal di `auth_info_baileys/`; jangan dibagikan atau di-commit. Untuk login ulang setelah logout, hentikan bot, hapus hanya folder `auth_info_baileys/`, lalu jalankan kembali dan scan QR baru.
+- 🤖 AI-powered replies with a customizable persona
+- 🔄 Automatic Gemini model rotation when a model reaches its daily quota
+- 👤 Owner-only message routing, replies, and direct sends
+- 👥 Group replies, with optional mention-only mode
+- 📇 Optional local vCard contact labels for the active conversation
+- 🎵 `!lagu <title>` requests from the Audius open music catalog
+- 🌋 Hourly Indonesian disaster summaries from BMKG
+- 💬 Read receipts after the bot has sent a reply
+- 📦 Optional full-server ZIP backups uploaded to a private Discord webhook
 
-## Penggunaan
+## Requirements
 
-- Semua chat pribadi masuk dikirim sebagai notifikasi ke OWNER (jika `.notify on`).
-- OWNER membalas *notifikasi tertentu* menggunakan fitur **Reply** WhatsApp. Bot mencocokkan ID pesan notifikasi ke mapping internal, lalu mengirim jawaban ke pengirim yang tepat. Nomor tidak diparsing dari teks notifikasi.
-- `.autoreply on|off|status` mengubah/menampilkan auto reply.
-- `.notify on|off|status` mengubah/menampilkan notifikasi owner.
-- `.bot status` dan `.help` tersedia untuk OWNER.
-- OWNER dapat mengirim satu pesan ke grup yang bot ikuti: kirim `.group list`, lalu `.group send <ID_GRUP> | <pesan>`. Bot tidak melakukan broadcast dan tidak mengaktifkan auto reply di grup.
+- Node.js 20 or newer
+- A WhatsApp account dedicated to the bot
+- A Google Gemini API key, or a local Ollama installation
 
-Untuk mengaktifkan AI di grup, gunakan `GROUP_AI_ENABLED=true`. Secara default bot hanya menjawab saat di-mention; ubah `GROUP_REPLY_ON_MENTION_ONLY=false` jika bot memang harus menjawab setiap pesan grup. Sticker tidak dikirim ke grup.
+## Quick Start
 
-Perubahan `.autoreply` dan `.notify` disimpan di `data/settings.json`, sehingga tetap berlaku setelah restart. Auto reply memakai indikator typing, jeda acak, dan cooldown per pengirim; setiap pesan tetap dapat dinotifikasikan saat cooldown aktif.
+```cmd
+git clone https://github.com/MrsukaQue/whatsapp-auto.git
+cd whatsapp-auto
+copy .env.example .env
+npm install
+```
 
-## Balasan AI
+Open `.env` and set at least the following values:
 
-Bot mengirim balasan teks AI. Tidak ada sticker otomatis yang dikirim bot.
+```env
+OWNER_NUMBER=628xxxxxxxxxx
+AI_ENABLED=true
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key
+```
 
-## AI gratis di komputer sendiri
+Start the bot:
 
-Bot mendukung Ollama lokal, sehingga tidak memerlukan API key atau layanan AI berbayar. Install Ollama untuk Windows dari [situs Ollama](https://ollama.com/download), lalu di Command Prompt jalankan `ollama pull qwen2.5:1.5b`. Ubah `AI_ENABLED=true` pada `.env` dan restart bot. Saat aktif, jawaban teks dari AI dikirim sebelum sticker; jika Ollama mati atau gagal, bot tetap mengirim auto reply biasa. Riwayat AI dibatasi di memori dan tidak ditulis ke `data/`.
+```cmd
+npm start
+```
 
-`AI_TIMEOUT_MS` mengatur waktu tunggu Ollama. Nilai default 120000 (2 menit) sesuai untuk pemuatan pertama model yang lebih besar seperti 7B.
+The terminal displays a QR code on the first run. Scan it from the WhatsApp account that will act as the bot: **Linked devices → Link a device**.
 
-### OpenAI API
+## AI Providers
 
-Untuk memakai OpenAI, isi `OPENAI_API_KEY` di `.env`, lalu gunakan `AI_PROVIDER=openai` dan `OPENAI_MODEL=gpt-5-mini`. API ini berbayar sesuai pemakaian dan API key harus dirahasiakan. Bot memakai endpoint Responses API dengan `store: false`; riwayat pendek tetap dikelola lokal di RAM. Untuk kembali ke AI lokal gratis, ubah `AI_PROVIDER=ollama`.
+### Gemini
 
-### Gemini API free tier
+```env
+AI_ENABLED=true
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-3.5-flash-lite,gemini-3-flash-preview,gemini-2.5-flash-lite
+```
 
-Provider default adalah Gemini. Buat API key melalui [Google AI Studio](https://aistudio.google.com/app/apikey), isi `GEMINI_API_KEY` di `.env`, dan gunakan `AI_PROVIDER=gemini`. Project ini memakai `gemini-3.6-flash`, model terbaru yang diminta Google untuk akun baru. Free tier memiliki kuota terbatas dan input pada tier tersebut dapat dipakai Google untuk meningkatkan produk; jangan kirim informasi sensitif. Untuk kembali ke AI lokal yang tidak mengirim data keluar, gunakan `AI_PROVIDER=ollama`.
+When Gemini returns a quota-limit error, the bot automatically switches to the next configured model until the next day.
 
-`GEMINI_MIN_REQUEST_INTERVAL_MS=8000` mengantrekan request Gemini secara global ketika banyak chat masuk. Ini bukan cooldown: setiap pesan tetap dijawab AI, hanya diproses berurutan untuk mengurangi error 429 pada free tier.
+### Ollama (local)
 
-## Nama kontak untuk konteks AI
+```cmd
+ollama pull qwen2.5:1.5b
+```
 
-Set `CONTACTS_ENABLED=true` dan arahkan `CONTACTS_VCF_FILE` ke file vCard Anda. Bot membaca nama dan nomor secara lokal saat mulai, tidak menyimpan ulang seluruh daftar kontak, dan hanya memberi nama kontak yang cocok sebagai konteks untuk percakapan aktif. Jika memakai Gemini free tier, nama kontak aktif tersebut ikut menjadi bagian dari request AI; jangan aktifkan fitur ini bila Anda tidak menyetujui hal tersebut.
+```env
+AI_ENABLED=true
+AI_PROVIDER=ollama
+AI_OLLAMA_URL=http://127.0.0.1:11434
+AI_MODEL=qwen2.5:1.5b
+```
 
-Untuk mencegah jawaban chat terpotong oleh reasoning, konfigurasi Gemini memakai `AI_THINKING_LEVEL=low` dan `AI_MAX_OUTPUT_TOKENS=1024`, sementara `AI_MAX_REPLY_CHARS` tetap membatasi panjang pesan WhatsApp.
+### Persona
 
-Jika AI berhasil membuat jawaban, cooldown tidak diterapkan agar setiap pesan dapat ditanggapi. Cooldown hanya digunakan untuk balasan cadangan ketika AI tidak tersedia.
+The active persona lives in [prompts/mikail-full.txt](prompts/mikail-full.txt). Set this in `.env`:
 
-Pesan dari OWNER diverifikasi memakai JID sebelum AI diberi konteks bahwa instruksi tersebut berasal dari OWNER.
+```env
+AI_SYSTEM_PROMPT_FILE=prompts/mikail-full.txt
+```
 
-Sticker dari pengirim juga diteruskan ke OWNER beserta notifikasi routing, tanpa perlu mengunduhnya. Bot membalas sticker dengan teks AI singkat yang tidak mengaku memahami isi visualnya.
+## Owner Commands
 
-## Update bencana nasional
+| Command | Description |
+| --- | --- |
+| `.autoreply on\|off\|status` | Manage automatic replies |
+| `.notify on\|off\|status` | Manage owner notifications |
+| `.bot status` | Show basic bot status |
+| `.group list` | List groups joined by the bot |
+| `.group send <GROUP_ID> \| <message>` | Send a group message |
+| `.send <number> \| <message>` | Send a direct message |
+| `.copy <number>` | Reply to a text message, then copy it to a number |
+| `.help` | Show the command list |
 
-Dengan `DISASTER_ALERTS_ENABLED=true`, bot mengirim satu ringkasan BMKG nasional ke OWNER saat start dan setiap `DISASTER_ALERT_INTERVAL_MS` (default 1 jam). Ringkasan memuat gempa terbaru, gempa M5+ terbaru, gempa dirasakan, serta tautan resmi peringatan karhutla dan cuaca. Indeks karhutla adalah risiko berbasis kondisi cuaca, bukan konfirmasi kebakaran aktif.
+## Group Replies
 
-## GIF suasana (opsional)
+```env
+GROUP_AI_ENABLED=true
+GROUP_REPLY_ON_MENTION_ONLY=false
+```
 
-Set `MOOD_GIF_ENABLED=true`, lalu letakkan video MP4 pendek yang Anda miliki di `assets/gifs/` dengan nama `happy.mp4`, `sad.mp4`, atau `busy.mp4`. Bot mengirimnya sebagai GIF bila kata-kata suasana yang relevan terdeteksi, dengan cooldown per suasana dan pengirim. Bot tidak mengunduh GIF acak dari internet.
+Set `GROUP_REPLY_ON_MENTION_ONLY=true` if the bot should reply only when someone mentions it.
 
-Persona panjang dapat disimpan sebagai file teks, misalnya `prompts/mikail.txt`, lalu aktifkan melalui `AI_SYSTEM_PROMPT_FILE=prompts/mikail.txt` di `.env`. Nilai file tersebut mengalahkan `AI_SYSTEM_PROMPT` satu baris.
+## Music Requests
+
+Anyone can request an available track from the Audius catalog:
+
+```text
+!lagu lofi beats
+```
+
+The bot sends audio only when a stream is available through Audius. Requests have a one-minute cooldown per chat.
+
+## Local Contact Labels
+
+```env
+CONTACTS_ENABLED=true
+CONTACTS_VCF_FILE=C:\path\to\contacts.vcf
+```
+
+The vCard file is read locally at startup. The bot only uses the matching label for the active sender; it does not publish the contact list to GitHub.
+
+## Indonesian Disaster Alerts
+
+```env
+DISASTER_ALERTS_ENABLED=true
+DISASTER_ALERT_INTERVAL_MS=3600000
+```
+
+The owner receives a national BMKG summary at startup and then every hour.
+
+## Discord Full-Server Backup
+
+> **Important:** This backup contains `.env`, WhatsApp session files, runtime data, and the configured vCard file. Use a private Discord channel and never expose its webhook URL.
+
+```env
+DISCORD_BACKUP_ENABLED=true
+DISCORD_BACKUP_WEBHOOK_URL=https://discord.com/api/webhooks/...
+DISCORD_BACKUP_INTERVAL_MS=86400000
+```
+
+The bot creates a ZIP on connection, uploads it to Discord, then removes the local temporary ZIP. It runs again every 24 hours.
+
+## Deploying or Updating on a Windows Server
+
+Initial deployment:
+
+```cmd
+git clone https://github.com/MrsukaQue/whatsapp-auto.git
+cd whatsapp-auto
+copy .env.example .env
+npm install
+npm start
+```
+
+For later updates:
+
+```cmd
+git pull origin main
+npm install
+npm start
+```
+
+Keep the server `.env`, `auth_info_baileys`, `data`, and contact files private. They are intentionally ignored by Git.
+
+## Pushing Changes to GitHub
+
+```cmd
+git add .
+git commit -m "Describe your change"
+git push origin main
+```
+
+Before pushing, run:
+
+```cmd
+git status --short
+```
+
+Never commit `.env`, `auth_info_baileys`, `data`, API keys, Discord webhook URLs, or contact files.
 
 ## Troubleshooting
 
-- **QR tidak muncul:** hapus `auth_info_baileys/` hanya bila Anda memang ingin membuat session baru, kemudian start ulang.
-- **"mapping telah expired":** balas notifikasi sebelum `MESSAGE_MAPPING_TTL` (default 24 jam), atau tingkatkan nilai itu di `.env` dan restart.
-- **Owner tidak dikenali:** pastikan `OWNER_NUMBER` hanya berisi digit dan sama dengan nomor WhatsApp yang menerima notifikasi.
-- **Koneksi putus:** bot mencoba reconnect bertahap hingga batas `RECONNECT_MAX_ATTEMPTS`. Logout, bad session, atau connection replaced tidak direconnect otomatis demi keamanan; login ulang diperlukan.
+| Problem | What to check |
+| --- | --- |
+| `Gemini HTTP 429` | The bot should rotate to a fallback model; check the terminal for `GEMINI_MODEL_LIMITED`. |
+| `Gemini HTTP 404` | Verify `GEMINI_MODEL` against the models available to your API key. |
+| Contact directory error | Make sure `CONTACTS_VCF_FILE` points to a `.vcf` file, not a folder. |
+| QR is not shown | Remove `auth_info_baileys` only when you intentionally need to link a new WhatsApp session. |
+| Group reply does not work | Confirm the bot is in the group and `GROUP_AI_ENABLED=true`. |
 
-Baileys adalah library tidak resmi; gunakan hanya pada akun yang Anda kendalikan dan patuhi ketentuan WhatsApp. Bot ini tidak mengumpulkan kontak, melakukan bulk messaging, atau menyimpan isi riwayat chat.
+## Security
+
+This project uses an unofficial WhatsApp library. Use it only with accounts you control, respect WhatsApp's terms, and protect every file that contains credentials or session data.
