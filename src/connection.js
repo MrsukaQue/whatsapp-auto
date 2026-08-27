@@ -48,7 +48,9 @@ export class ConnectionManager {
     if (connection === 'open') {
       this.reconnectAttempts = 0;
       this.log('CONNECTED');
-      this.onConnected().catch((error) => this.log('ERROR', { event: 'connected_callback', error: error.message }));
+      // A connection callback may be synchronous (for example starting timers)
+      // or asynchronous. Normalize both forms before attaching error handling.
+      Promise.resolve(this.onConnected()).catch((error) => this.log('ERROR', { event: 'connected_callback', error: error.message }));
       return;
     }
     if (connection !== 'close' || this.stopped) return;
